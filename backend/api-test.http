@@ -1,0 +1,172 @@
+@baseUrl = http://localhost:5000/api
+
+# Execute login request first to get token!
+@token = {{verifyPIN.response.body.data.token}}
+
+### =========================================================================
+### AUTHENTICATION
+### =========================================================================
+
+### =========================================================================
+### AUTHENTICATION (New OTP/PIN Flow)
+### =========================================================================
+
+### 1. Request OTP
+# @name requestOTP
+POST {{baseUrl}}/auth/request-otp
+Content-Type: application/json
+
+{
+  "phone": "081234567890"
+}
+
+### 2. Verify OTP
+# @name verifyOTP
+POST {{baseUrl}}/auth/verify-otp
+Content-Type: application/json
+
+{
+  "phone": "081234567890",
+  "otp": "1234" 
+}
+
+### 3. Verify PIN (Login)
+# @name verifyPIN
+POST {{baseUrl}}/auth/verify-pin
+Content-Type: application/json
+
+{
+  "phone": "081234567890",
+  "pin": "123456"
+}
+
+### 4. Get Current User (Me)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+
+### =========================================================================
+### PRODUCTS (MENU)
+### =========================================================================
+
+### 4. Get All Products (Public)
+# @name getProducts
+GET {{baseUrl}}/products
+
+### 5. Create Product (Admin Only)
+# @name createProduct
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Croissant Butter",
+  "description": "Croissant mentega klasik.",
+  "price": 22000,
+  "category": "snack",
+  "stock": 15
+}
+
+### 6. Get Single Product
+@productId = {{createProduct.response.body.data.id}}
+GET {{baseUrl}}/products/{{productId}}
+
+### 7. Update Product (Admin Only)
+PUT {{baseUrl}}/products/{{productId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "price": 25000,
+  "stock": 20
+}
+
+### 8. Delete Product (Admin Only)
+DELETE {{baseUrl}}/products/{{productId}}
+Authorization: Bearer {{token}}
+
+
+### =========================================================================
+### ORDERS
+### =========================================================================
+
+### 9. Create Order (Customer/Admin)
+# We dynamically get a product ID from the "Get All Products" request above
+@orderProductId = {{getProducts.response.body.data[0].id}}
+
+# @name createOrder
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notes": "Kopinya agak manis ya",
+  "items": [
+    {
+      "productId": "{{orderProductId}}",
+      "quantity": 2
+    }
+  ]
+}
+
+### 10. Get All Orders (Admin gets all, Customer gets own)
+GET {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+
+### 11. Get Single Order
+@orderId = {{createOrder.response.body.data.id}}
+GET {{baseUrl}}/orders/{{orderId}}
+Authorization: Bearer {{token}}
+
+### 12. Update Order Status (Admin Only)
+PATCH {{baseUrl}}/orders/{{orderId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "processing"
+}
+
+
+### =========================================================================
+### CART
+### =========================================================================
+
+### 13. Get User Cart
+GET {{baseUrl}}/cart
+Authorization: Bearer {{token}}
+
+### 14. Add Item to Cart
+# @name addToCart
+POST {{baseUrl}}/cart
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "productId": 1,
+  "quantity": 1,
+  "notes": "Less sugar",
+  "options": {
+    "size": "Regular",
+    "temp": "Hot"
+  }
+}
+
+### 15. Update Cart Item
+@cartItemId = {{addToCart.response.body.data.id}}
+PUT {{baseUrl}}/cart/{{cartItemId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "quantity": 2,
+  "notes": "Extra sweet"
+}
+
+### 16. Remove Item from Cart
+DELETE {{baseUrl}}/cart/{{cartItemId}}
+Authorization: Bearer {{token}}
+
+### 17. Clear Cart
+DELETE {{baseUrl}}/cart
+Authorization: Bearer {{token}}
